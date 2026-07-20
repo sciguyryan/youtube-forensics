@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "youtube-forensic-toolkit"
+version = "2.0.0"
+description = "Forensic acquisition, packaging, signing, and verification of YouTube evidence"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "LGPL-2.1-or-later"}
+authors = [{name = "YouTube Forensic Toolkit contributors"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+youtube-forensic = "youtube_forensics.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
