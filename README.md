@@ -87,7 +87,7 @@ python3 -m pytest
 
 ## Copy/paste acquisition test
 
-The following uses case ID `CASE-0031`, the previously identified YouTube URL, and the toolkit data root used in the earlier examples.
+The following uses case ID `CASE-0001`, the previously identified YouTube URL, and the toolkit data root used in the earlier examples.
 
 ## Operator identification
 
@@ -119,7 +119,7 @@ Every case record separately captures the resolved operator, its source, the und
 youtube-forensics \
   --root /mnt/storage/GitHub/youtube-forensics \
   acquire \
-  --case-id CASE-0031 \
+  --case-id CASE-0001 \
   --operator "Jane Smith" \
   --matter-title "Title of the Video" \
   --case-comment "Preservation of the identified YouTube publication concerning the subject at hand, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
@@ -132,7 +132,7 @@ Recommended copy/paste test from the source checkout—no activation or pip requ
 PYTHONPATH=src python3 -m youtube_forensics \
   --root /mnt/storage/GitHub/youtube-forensics \
   acquire \
-  --case-id CASE-0031 \
+  --case-id CASE-0001 \
   --operator "Jane Smith" \
   --matter-title "Title of the Video" \
   --case-comment "Preservation of the identified YouTube publication concerning the subject at hand, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
@@ -183,10 +183,10 @@ The transient `INCOMPLETE` state marker is operational metadata and is never inc
 
 ## Transaction boundary
 
-Finalization follows this order:
+Finalisation follows this order:
 
 1. Complete all mandatory and best-effort captures.
-2. Finalize acquisition log and generated records.
+2. Finalise acquisition log and generated records.
 3. Remove the transient incomplete marker.
 4. Generate evidence-set identity, file inventory, and internal manifests.
 5. Create the archive.
