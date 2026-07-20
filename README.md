@@ -22,14 +22,14 @@ The main acquisition log records toolkit status messages and transcripts for the
 The toolkit has no third-party Python runtime dependencies. From the extracted source directory, you can test it directly without installing anything into Python:
 
 ```bash
-PYTHONPATH=src python3 -m youtube_forensic --help
+PYTHONPATH=src python3 -m youtube_forensics --help
 ```
 
 This is the recommended first test and works from Bash, Zsh, and fish.
 
 ## Optional installation into a virtual environment
 
-A working `venv` and `pip` installation is required only when you want the generated `youtube-forensic` console command.
+A working `venv` and `pip` installation is required only when you want the generated `youtube-forensics` console command.
 
 On Debian or Ubuntu, install the supporting Python packages first when necessary:
 
@@ -75,7 +75,7 @@ Do not source `.venv/bin/activate` from fish; that file uses POSIX-shell `case .
 Confirm the installed command:
 
 ```bash
-youtube-forensic --help
+youtube-forensics --help
 ```
 
 For editable development and tests, after activating the correct shell-specific environment:
@@ -101,8 +101,8 @@ The toolkit resolves the human operator in this order:
 For a persistent toolkit-root default:
 
 ```bash
-PYTHONPATH=src python3 -m youtube_forensic \
-  --root /mnt/storage/Projects/youtube-forensic \
+PYTHONPATH=src python3 -m youtube_forensics \
+  --root /mnt/storage/GitHub/youtube-forensics \
   init \
   --operator "Jane Smith"
 ```
@@ -116,27 +116,27 @@ export YOUTUBE_FORENSIC_OPERATOR="Jane Smith"
 Every case record separately captures the resolved operator, its source, the underlying login username, and the hostname.
 
 ```bash
-youtube-forensic \
-  --root /mnt/storage/Projects/youtube-forensic \
+youtube-forensics \
+  --root /mnt/storage/GitHub/youtube-forensics \
   acquire \
   --case-id CASE-0031 \
   --operator "Jane Smith" \
-  --matter-title "Weekly Pokémon GO coin publication" \
-  --case-comment "Preservation of the identified YouTube publication concerning weekly Pokémon GO coin availability, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
-  'https://www.youtube.com/watch?v=np4GAFN9Jyo'
+  --matter-title "Title of the Video" \
+  --case-comment "Preservation of the identified YouTube publication concerning the subject at hand, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
+  'https://www.youtube.com/watch?v=np4AAFN8Jab'
 ```
 
 Recommended copy/paste test from the source checkout—no activation or pip required:
 
 ```bash
-PYTHONPATH=src python3 -m youtube_forensic \
-  --root /mnt/storage/Projects/youtube-forensic \
+PYTHONPATH=src python3 -m youtube_forensics \
+  --root /mnt/storage/GitHub/youtube-forensics \
   acquire \
   --case-id CASE-0031 \
   --operator "Jane Smith" \
-  --matter-title "Weekly Pokémon GO coin publication" \
-  --case-comment "Preservation of the identified YouTube publication concerning weekly Pokémon GO coin availability, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
-  'https://www.youtube.com/watch?v=np4GAFN9Jyo'
+  --matter-title "Title of the Video" \
+  --case-comment "Preservation of the identified YouTube publication concerning the subject at hand, including associated metadata, available captions, HTTP response material, and any available live-chat replay." \
+  'https://www.youtube.com/watch?v=np4AAFN8Jab'
 ```
 
 For longer comments, place the text in a file and substitute:
@@ -154,10 +154,10 @@ The first acquisition automatically starts interactive creation of a dedicated p
 After acquisition, use the exact archive path printed in the completion summary. For example:
 
 ```bash
-youtube-forensic \
-  --root /mnt/storage/Projects/youtube-forensic \
+youtube-forensics \
+  --root /mnt/storage/GitHub/youtube-forensics \
   verify \
-  /mnt/storage/Projects/youtube-forensic/archived/CASE-0031_YYYYMMDD_HASH.7z
+  /mnt/storage/GitHub/youtube-forensics/archived/CASE-0001_YYYYMMDD_HASH.7z
 ```
 
 The verifier enforces the current evidence-package contract and rejects incomplete documentation layouts.
@@ -216,7 +216,7 @@ The toolkit stores its evidence-signing keyring under:
 ROOT/pgp/keyring
 ```
 
-For the examples below, the root is `/mnt/storage/Projects/youtube-forensic`.
+For the examples below, the root is `/mnt/storage/GitHub/youtube-forensics`.
 The public key is safe to distribute. The secret-key export and ownertrust file
 must be protected as sensitive evidence-system credentials.
 
@@ -224,23 +224,23 @@ must be protected as sensitive evidence-system credentials.
 
 ```bash
 gpg \
-  --homedir /mnt/storage/Projects/youtube-forensic/pgp/keyring \
+  --homedir /mnt/storage/GitHub/youtube-forensics/pgp/keyring \
   --with-colons --fingerprint --list-secret-keys
 ```
 
 The toolkit also writes the selected fingerprint to:
 
 ```text
-/mnt/storage/Projects/youtube-forensic/pgp/evidence-key-fingerprint.txt
+/mnt/storage/GitHub/youtube-forensics/pgp/evidence-key-fingerprint.txt
 ```
 
 ### Export the public key
 
 ```bash
-FPR="$(tr -d '[:space:]' < /mnt/storage/Projects/youtube-forensic/pgp/evidence-key-fingerprint.txt)"
+FPR="$(tr -d '[:space:]' < /mnt/storage/GitHub/youtube-forensics/pgp/evidence-key-fingerprint.txt)"
 
 gpg \
-  --homedir /mnt/storage/Projects/youtube-forensic/pgp/keyring \
+  --homedir /mnt/storage/GitHub/youtube-forensics/pgp/keyring \
   --armor --export "$FPR" \
   > youtube-forensic-evidence-public-key.asc
 ```
@@ -251,11 +251,11 @@ private signing key.
 ### Export an encrypted backup of the private key
 
 ```bash
-FPR="$(tr -d '[:space:]' < /mnt/storage/Projects/youtube-forensic/pgp/evidence-key-fingerprint.txt)"
+FPR="$(tr -d '[:space:]' < /mnt/storage/GitHub/youtube-forensics/pgp/evidence-key-fingerprint.txt)"
 
 umask 077
 gpg \
-  --homedir /mnt/storage/Projects/youtube-forensic/pgp/keyring \
+  --homedir /mnt/storage/GitHub/youtube-forensics/pgp/keyring \
   --armor --export-secret-keys "$FPR" \
   > youtube-forensic-evidence-secret-key.asc
 ```
@@ -268,7 +268,7 @@ with the public key.
 
 ```bash
 gpg \
-  --homedir /mnt/storage/Projects/youtube-forensic/pgp/keyring \
+  --homedir /mnt/storage/GitHub/youtube-forensics/pgp/keyring \
   --export-ownertrust \
   > youtube-forensic-ownertrust.txt
 ```
@@ -317,13 +317,13 @@ After restoration, run the toolkit's key preflight. It will reuse the imported
 key and regenerate the public-key and fingerprint sidecars:
 
 ```bash
-PYTHONPATH=src python3 -m youtube_forensic \
+PYTHONPATH=src python3 -m youtube_forensics \
   --root /new/toolkit/root \
   keygen
 ```
 
 ## Operator identity setup (rc9)
 
-Run `youtube-forensic --root ROOT init` in an interactive terminal. The wizard creates `ROOT/operators/<operator-id>.json`, stores only public identity metadata and full GnuPG fingerprints, and selects a usable secret signing key from the normal system keyring. Private key material is never copied into the toolkit root.
+Run `youtube-forensics --root ROOT init` in an interactive terminal. The wizard creates `ROOT/operators/<operator-id>.json`, stores only public identity metadata and full GnuPG fingerprints, and selects a usable secret signing key from the normal system keyring. Private key material is never copied into the toolkit root.
 
 Routine acquisitions use the active profile automatically. Use `acquire --identity-file FILE` for a one-case override. A configured operator key is mandatory: acquisition fails if the personal archive signature cannot be created.
