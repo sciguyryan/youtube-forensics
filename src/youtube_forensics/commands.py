@@ -8,10 +8,10 @@ transcripts.
 from __future__ import annotations
 
 import os
-import shutil
 import shlex
+import shutil
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .errors import ToolkitError
@@ -37,7 +37,7 @@ def archive_tool() -> str:
 
 def _utc_now() -> str:
     """Return the current UTC time in ISO 8601 format."""
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _append_transcript(path: Path, argv: list[str], result: ToolResult) -> None:
@@ -72,16 +72,19 @@ def run(
         env=merged,
         input=input_text,
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         errors="replace",
     )
     result = ToolResult(argv, proc.returncode, proc.stdout, proc.stderr)
     if transcript is not None:
         _append_transcript(transcript, argv, result)
     if check and proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout).strip().splitlines()[-1:] or ["unknown error"]
-        raise ToolkitError(f"Command failed ({proc.returncode}): {' '.join(argv)}: {tail[0]}")
+        tail = (proc.stderr or proc.stdout).strip().splitlines()[-1:] or [
+            "unknown error"
+        ]
+        raise ToolkitError(
+            f"Command failed ({proc.returncode}): {' '.join(argv)}: {tail[0]}"
+        )
     return result
 
 

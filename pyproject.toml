@@ -8,15 +8,67 @@ version = "2.0.0"
 description = "Forensic acquisition, packaging, signing, and verification of YouTube evidence"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "LGPL-2.1-or-later"}
+license = "LGPL-2.1-or-later"
 authors = [{name = "YouTube Forensic Toolkit contributors"}]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = [
+    "build>=1.2",
+    "pytest>=8",
+    "pytest-cov>=6",
+    "ruff>=0.15",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "--cov=youtube_forensics",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["youtube_forensics"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+ignore = ["E501"]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes, including unused imports
+    "I",    # import ordering
+    "B",    # flake8-bugbear
+    "UP",   # Python syntax modernisation
+    "SIM",  # simplification suggestions
+    "RUF",  # Ruff-specific checks
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
 
 [project.scripts]
-youtube-forensic = "youtube_forensics.cli:main"
+youtube-forensics = "youtube_forensics.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

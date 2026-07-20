@@ -3,7 +3,10 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 from youtube_forensics.commands import run
+from youtube_forensics.models import ToolResult
 
 
 def test_run_writes_stdout_stderr_and_exit_to_transcript(tmp_path: Path) -> None:
@@ -33,3 +36,30 @@ def test_run_does_not_write_transcript_unless_requested(tmp_path: Path) -> None:
     run([sys.executable, "-c", "print('quiet')"])
 
     assert not transcript.exists()
+
+
+def test_require_and_archive_tool(monkeypatch) -> None:
+    """Resolve required executables and prefer the standalone 7-Zip binary."""
+    from youtube_forensics import commands
+    from youtube_forensics.errors import ToolkitError
+
+    monkeypatch.setattr(
+        commands.shutil, "which", lambda name: f"/bin/{name}" if name == "7zz" else None
+    )
+    assert commands.archive_tool() == "/bin/7zz"
+    with pytest.raises(ToolkitError, match="Required command"):
+        commands.require("missing")
+
+
+def test_version_handles_missing_and_empty_output(monkeypatch) -> None:
+    """Return stable fallback text for absent or silent version commands."""
+    from youtube_forensics import commands
+
+    monkeypatch.setattr(
+        commands, "run", lambda *args, **kwargs: ToolResult([], 0, "", "")
+    )
+    assert commands.version("tool") == "unknown"
+    monkeypatch.setattr(
+        commands, "run", lambda *args, **kwargs: (_ for _ in ()).throw(OSError())
+    )
+    assert commands.version("tool") == "unknown"

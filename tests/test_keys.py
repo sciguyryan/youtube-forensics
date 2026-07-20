@@ -26,9 +26,7 @@ def test_prepare_gnupg_interactive_configures_pinentry_and_agent(
     home = tmp_path / "keyring"
     monkeypatch.setattr(keys, "require", lambda command: f"/usr/bin/{command}")
     monkeypatch.setattr(keys, "_terminal_name", lambda: "/dev/pts/7")
-    monkeypatch.setattr(
-        keys, "_find_pinentry", lambda: "/usr/bin/pinentry-curses"
-    )
+    monkeypatch.setattr(keys, "_find_pinentry", lambda: "/usr/bin/pinentry-curses")
 
     calls = []
 
@@ -81,9 +79,7 @@ def test_export_keypair_writes_and_verifies_backup(tmp_path, monkeypatch) -> Non
         "prepare_gnupg",
         lambda path, interactive: {"GNUPGHOME": str(path)},
     )
-    monkeypatch.setattr(
-        keys, "fingerprint", lambda path, env=None: fingerprint
-    )
+    monkeypatch.setattr(keys, "fingerprint", lambda path, env=None: fingerprint)
 
     def fake_run(argv, **kwargs):
         """Return deterministic material for each mocked export operation."""
@@ -125,18 +121,80 @@ def test_export_keypair_writes_and_verifies_backup(tmp_path, monkeypatch) -> Non
     assert (output / "evidence-secret-key.asc").stat().st_mode & 0o777 == 0o600
 
 
-def test_export_keypair_refuses_overwrite_without_force(
-    tmp_path, monkeypatch
-) -> None:
+def test_export_keypair_refuses_overwrite_without_force(tmp_path, monkeypatch) -> None:
     """Refuse to replace an existing secret-key backup without --force."""
     home = tmp_path / "keyring"
     output = tmp_path / "keys"
     output.mkdir()
-    (output / "evidence-secret-key.asc").write_text(
-        "existing", encoding="utf-8"
-    )
+    (output / "evidence-secret-key.asc").write_text("existing", encoding="utf-8")
     monkeypatch.setattr(keys, "prepare_gnupg", lambda path, interactive: {})
     monkeypatch.setattr(keys, "fingerprint", lambda path, env=None: "ABC")
 
     with pytest.raises(ToolkitError, match="--force"):
         keys.export_keypair(home, output)
+
+
+def test_ensure_key_exports_existing_key(tmp_path, monkeypatch) -> None:
+    """Export an existing evidence key without interactive generation."""
+    fingerprint = "A" * 40
+    home = tmp_path / "keyring"
+    public_key = tmp_path / "evidence-public-key.asc"
+    fingerprint_file = tmp_path / "fingerprint.txt"
+    monkeypatch.setattr(
+        keys, "prepare_gnupg", lambda *args, **kwargs: {"GNUPGHOME": str(home)}
+    )
+    monkeypatch.setattr(keys, "fingerprint", lambda *args, **kwargs: fingerprint)
+    monkeypatch.setattr(
+        keys,
+        "run",
+        lambda argv, **kwargs: make_result(
+            argv,
+            stdout="-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic\n",
+        ),
+    )
+
+    result = keys.ensure_key(home, public_key, fingerprint_file)
+
+    assert result == fingerprint
+    assert public_key.read_text(encoding="utf-8").startswith("-----BEGIN")
+    assert fingerprint_file.read_text(encoding="ascii").strip() == fingerprint
+    assert fingerprint_file.stat().st_mode & 0o777 == 0o600
+
+
+def test_ensure_key_rejects_noninteractive_generation(tmp_path, monkeypatch) -> None:
+    """Refuse key generation when no key and no interactive terminal exist."""
+    monkeypatch.setattr(keys, "prepare_gnupg", lambda *args, **kwargs: {})
+    monkeypatch.setattr(keys, "fingerprint", lambda *args, **kwargs: None)
+    monkeypatch.setattr(keys.sys.stdin, "isatty", lambda: False)
+
+    with pytest.raises(ToolkitError, match="interactive key generation"):
+        keys.ensure_key(tmp_path / "home", tmp_path / "pub", tmp_path / "fpr")
+
+
+def test_sign_reports_failure(tmp_path, monkeypatch) -> None:
+    """Raise a descriptive error when archive signing fails."""
+    monkeypatch.setattr(keys, "prepare_gnupg", lambda *args, **kwargs: {})
+    monkeypatch.setattr(
+        keys,
+        "run",
+        lambda argv, **kwargs: make_result(
+            argv, returncode=2, stderr="bad passphrase\n"
+        ),
+    )
+
+    with pytest.raises(ToolkitError, match="bad passphrase"):
+        keys.sign(tmp_path / "home", tmp_path / "archive", tmp_path / "sig", "FPR")
+
+
+def test_fingerprint_reads_first_gpg_fingerprint(tmp_path, monkeypatch) -> None:
+    """Return the first fingerprint in GnuPG colon output."""
+    monkeypatch.setattr(keys, "require", lambda command: command)
+    monkeypatch.setattr(
+        keys,
+        "run",
+        lambda argv, **kwargs: make_result(
+            argv, stdout="sec:::::::::\nfpr:::::::::ABCDEF:\n"
+        ),
+    )
+
+    assert keys.fingerprint(tmp_path) == "ABCDEF"

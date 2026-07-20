@@ -37,8 +37,6 @@ def test_case_comments_written_to_both_formats(tmp_path: Path) -> None:
     write_record(tmp_path, record)
 
     markdown = (tmp_path / "CASE_RECORD.md").read_text(encoding="utf-8")
-    data = json.loads(
-        (tmp_path / "CASE_RECORD.json").read_text(encoding="utf-8")
-    )
+    data = json.loads((tmp_path / "CASE_RECORD.json").read_text(encoding="utf-8"))
     assert comments in markdown
     assert data["case"]["comments"] == comments

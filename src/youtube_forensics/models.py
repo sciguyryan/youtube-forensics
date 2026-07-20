@@ -2,25 +2,32 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 
 def utc_now() -> datetime:
     """Return the current timezone-aware UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def iso_utc(value: datetime | None = None) -> str:
     """Format a datetime as a whole-second UTC ISO 8601 string."""
-    return (value or utc_now()).astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        (value or utc_now())
+        .astimezone(UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 @dataclass(slots=True)
 class CaseInfo:
     """Hold operator and matter details supplied for an acquisition."""
+
     case_id: str
     comments: str
     operator_identity: dict[str, Any]
@@ -34,6 +41,7 @@ class CaseInfo:
 @dataclass(slots=True)
 class ToolResult:
     """Capture the result of an external command invocation."""
+
     command: list[str]
     returncode: int
     stdout: str
@@ -43,6 +51,7 @@ class ToolResult:
 @dataclass(slots=True)
 class VerificationStage:
     """Describe one verification check and its outcome."""
+
     name: str
     status: str
     detail: str = ""
@@ -51,6 +60,7 @@ class VerificationStage:
 @dataclass(slots=True)
 class VerificationSummary:
     """Collect verification stages for an evidence archive."""
+
     archive: Path
     stages: list[VerificationStage] = field(default_factory=list)
 
@@ -67,6 +77,7 @@ class VerificationSummary:
 @dataclass(slots=True)
 class CaseRecord:
     """Represent the complete machine-readable evidence case record."""
+
     schema_version: str
     toolkit_name: str
     toolkit_version: str

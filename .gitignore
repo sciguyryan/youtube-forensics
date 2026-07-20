@@ -8,5 +8,14 @@ config.json
 
 # Generated Python files.
 /.pytest_cache
+/src/youtube_forensic_toolkit.egg-info
 /src/youtube_forensics/__pycache__
-/tests/__pycache__/
+
+# Test stuff.
+.coverage
+coverage.xml
+/.ruff_cache
+/tests/__pycache__
+
+# Virtual environment.
+/.venv

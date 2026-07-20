@@ -13,7 +13,7 @@ import platform
 import shutil
 import socket
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -33,7 +33,7 @@ from .verify import verify_archive
 def _id() -> str:
     """Return a timestamped identifier suitable for an acquisition run."""
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     return f"{timestamp}-{uuid.uuid4().hex[:8]}"
 
 
@@ -209,7 +209,7 @@ def acquire(
         ytdlp += ["--cookies", str(cookies)]
 
     note("INFO", "Starting primary yt-dlp acquisition")
-    result = run(ytdlp + [url], check=False, transcript=log_path)
+    result = run([*ytdlp, url], check=False, transcript=log_path)
     (stage / "reports" / "yt-dlp-primary.stdout.txt").write_text(
         result.stdout,
         encoding="utf-8",
@@ -238,10 +238,8 @@ def acquire(
             chat += ["--cookies", str(cookies)]
 
         note("INFO", "Starting best-effort live-chat acquisition")
-        chat_result = run(chat + [url], check=False, transcript=log_path)
-        status = (
-            "Complete" if chat_result.returncode == 0 else "Partial or unavailable"
-        )
+        chat_result = run([*chat, url], check=False, transcript=log_path)
+        status = "Complete" if chat_result.returncode == 0 else "Partial or unavailable"
         record.evidence["live_chat_status"] = status
         (stage / "reports" / "live-chat-capture.txt").write_text(
             (
@@ -306,8 +304,7 @@ def acquire(
             )
         except (OSError, json.JSONDecodeError):
             record.observations.append(
-                "Primary yt-dlp metadata JSON could not be parsed for the "
-                "case record."
+                "Primary yt-dlp metadata JSON could not be parsed for the case record."
             )
 
     media_files = (
@@ -418,11 +415,8 @@ def acquire(
         encoding="utf-8",
     )
     evidence_set_hash = digest(evidence_manifest, "sha256")
-    archive_date = datetime.now(timezone.utc).strftime("%Y%m%d")
-    archive = (
-        archive_dir
-        / f"{case.case_id}_{archive_date}_{evidence_set_hash[:16]}.7z"
-    )
+    archive_date = datetime.now(UTC).strftime("%Y%m%d")
+    archive = archive_dir / f"{case.case_id}_{archive_date}_{evidence_set_hash[:16]}.7z"
 
     record.evidence["evidence_set_sha256"] = evidence_set_hash
     record.evidence["archive_filename"] = archive.name

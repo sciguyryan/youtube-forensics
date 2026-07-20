@@ -9,8 +9,8 @@ from __future__ import annotations
 import argparse
 import getpass
 import hashlib
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from .acquire import acquire
 from .console import log, security_warning, summary
@@ -178,9 +178,7 @@ def _keygen(args: argparse.Namespace) -> int:
 def _export_keypair(args: argparse.Namespace) -> int:
     """Export the evidence keypair after presenting a security warning."""
 
-    security_warning(
-        ["This exports plaintext private key material."]
-    )
+    security_warning(["This exports plaintext private key material."])
     export_keypair(
         args.root / "pgp" / "keyring",
         args.output or args.root / "keys",

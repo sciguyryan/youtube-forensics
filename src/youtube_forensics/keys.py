@@ -6,18 +6,17 @@ key, signs archives, and verifies key backups before they are released.
 
 from __future__ import annotations
 
-import os
 import hashlib
 import json
+import os
 import shutil
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .commands import require, run
 from .errors import ToolkitError
-
 
 _PINENTRY_CANDIDATES = (
     "pinentry-curses",
@@ -54,7 +53,9 @@ def _write_agent_config(gnupg_home: Path, pinentry: str) -> None:
     existing: list[str] = []
     if config.exists():
         existing = config.read_text(encoding="utf-8", errors="replace").splitlines()
-    filtered = [line for line in existing if not line.lstrip().startswith("pinentry-program")]
+    filtered = [
+        line for line in existing if not line.lstrip().startswith("pinentry-program")
+    ]
     filtered.append(f"pinentry-program {pinentry}")
     config.write_text("\n".join(filtered) + "\n", encoding="utf-8")
     config.chmod(0o600)
@@ -93,10 +94,20 @@ def prepare_gnupg(gnupg_home: Path, *, interactive: bool) -> dict[str, str]:
         _write_agent_config(gnupg_home, pinentry)
 
     # Reload any old agent so configuration and socket state match this homedir.
-    run(["gpgconf", "--homedir", str(gnupg_home), "--kill", "gpg-agent"], env=env, check=False)
-    launched = run(["gpgconf", "--homedir", str(gnupg_home), "--launch", "gpg-agent"], env=env, check=False)
+    run(
+        ["gpgconf", "--homedir", str(gnupg_home), "--kill", "gpg-agent"],
+        env=env,
+        check=False,
+    )
+    launched = run(
+        ["gpgconf", "--homedir", str(gnupg_home), "--launch", "gpg-agent"],
+        env=env,
+        check=False,
+    )
     if launched.returncode != 0:
-        detail = (launched.stderr or launched.stdout).strip() or "unknown gpg-agent error"
+        detail = (
+            launched.stderr or launched.stdout
+        ).strip() or "unknown gpg-agent error"
         raise ToolkitError(f"Unable to initialise the dedicated gpg-agent: {detail}")
 
     socket = run(
@@ -106,7 +117,9 @@ def prepare_gnupg(gnupg_home: Path, *, interactive: bool) -> dict[str, str]:
     )
     socket_path = socket.stdout.strip()
     if socket.returncode != 0 or not socket_path:
-        raise ToolkitError("GnuPG did not report an agent socket for the dedicated keyring")
+        raise ToolkitError(
+            "GnuPG did not report an agent socket for the dedicated keyring"
+        )
 
     return env
 
@@ -115,7 +128,14 @@ def fingerprint(gnupg_home: Path, *, env: dict[str, str] | None = None) -> str |
     """Return the dedicated evidence key fingerprint, if present."""
     require("gpg")
     result = run(
-        ["gpg", "--homedir", str(gnupg_home), "--batch", "--with-colons", "--list-secret-keys"],
+        [
+            "gpg",
+            "--homedir",
+            str(gnupg_home),
+            "--batch",
+            "--with-colons",
+            "--list-secret-keys",
+        ],
         env=env,
         check=False,
     )
@@ -134,13 +154,22 @@ def ensure_key(gnupg_home: Path, public_key: Path, fingerprint_file: Path) -> st
     fpr = fingerprint(gnupg_home, env=env)
     if not fpr:
         if not sys.stdin.isatty():
-            raise ToolkitError("No evidence signing key exists and interactive key generation is unavailable")
+            raise ToolkitError(
+                "No evidence signing key exists and interactive key generation is unavailable"
+            )
         env = prepare_gnupg(gnupg_home, interactive=True)
         uid = "YouTube Forensic Evidence Key <evidence@localhost>"
         result = run(
             [
-                "gpg", "--homedir", str(gnupg_home), "--yes",
-                "--quick-generate-key", uid, "rsa4096", "sign", "0",
+                "gpg",
+                "--homedir",
+                str(gnupg_home),
+                "--yes",
+                "--quick-generate-key",
+                uid,
+                "rsa4096",
+                "sign",
+                "0",
             ],
             env=env,
             check=False,
@@ -168,8 +197,16 @@ def sign(gnupg_home: Path, archive: Path, signature: Path, fpr: str) -> None:
     env = prepare_gnupg(gnupg_home, interactive=True)
     result = run(
         [
-            "gpg", "--homedir", str(gnupg_home), "--local-user", fpr,
-            "--armor", "--detach-sign", "--output", str(signature), str(archive),
+            "gpg",
+            "--homedir",
+            str(gnupg_home),
+            "--local-user",
+            fpr,
+            "--armor",
+            "--detach-sign",
+            "--output",
+            str(signature),
+            str(archive),
         ],
         env=env,
         check=False,
@@ -218,7 +255,9 @@ def export_keypair(
         raise ToolkitError("No evidence secret key exists in the dedicated keyring")
 
     if output_dir.is_symlink():
-        raise ToolkitError(f"Key export destination must not be a symbolic link: {output_dir}")
+        raise ToolkitError(
+            f"Key export destination must not be a symbolic link: {output_dir}"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     output_dir.chmod(0o700)
 
@@ -243,21 +282,24 @@ def export_keypair(
     env = prepare_gnupg(gnupg_home, interactive=True)
     public = run(
         ["gpg", "--homedir", str(gnupg_home), "--batch", "--armor", "--export", fpr],
-        env=env, check=False,
+        env=env,
+        check=False,
     )
     if public.returncode != 0 or "BEGIN PGP PUBLIC KEY BLOCK" not in public.stdout:
         raise _export_failure(public, "Public-key export")
 
     secret = run(
         ["gpg", "--homedir", str(gnupg_home), "--armor", "--export-secret-keys", fpr],
-        env=env, check=False,
+        env=env,
+        check=False,
     )
     if secret.returncode != 0 or "BEGIN PGP PRIVATE KEY BLOCK" not in secret.stdout:
         raise _export_failure(secret, "Secret-key export")
 
     trust = run(
         ["gpg", "--homedir", str(gnupg_home), "--export-ownertrust"],
-        env=env, check=False,
+        env=env,
+        check=False,
     )
     if trust.returncode != 0:
         raise _export_failure(trust, "Ownertrust export")
@@ -274,7 +316,9 @@ def export_keypair(
     trust_path.write_text(trust.stdout, encoding="utf-8")
     fingerprint_path.write_text(fpr + "\n", encoding="ascii")
 
-    created = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    created = (
+        datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    )
     readme_path.write_text(
         "YOUTUBE FORENSIC TOOLKIT — EVIDENCE KEY BACKUP\n"
         "================================================\n\n"
@@ -300,7 +344,8 @@ def export_keypair(
             },
             indent=2,
             sort_keys=True,
-        ) + "\n",
+        )
+        + "\n",
         encoding="utf-8",
     )
 
@@ -313,14 +358,30 @@ def export_keypair(
         verify_home = Path(temp_name) / "keyring"
         verify_env = prepare_gnupg(verify_home, interactive=False)
         imported_public = run(
-            ["gpg", "--homedir", str(verify_home), "--batch", "--import", str(public_path)],
-            env=verify_env, check=False,
+            [
+                "gpg",
+                "--homedir",
+                str(verify_home),
+                "--batch",
+                "--import",
+                str(public_path),
+            ],
+            env=verify_env,
+            check=False,
         )
         if imported_public.returncode != 0:
             raise _export_failure(imported_public, "Exported public-key verification")
         imported_secret = run(
-            ["gpg", "--homedir", str(verify_home), "--batch", "--import", str(secret_path)],
-            env=verify_env, check=False,
+            [
+                "gpg",
+                "--homedir",
+                str(verify_home),
+                "--batch",
+                "--import",
+                str(secret_path),
+            ],
+            env=verify_env,
+            check=False,
         )
         if imported_secret.returncode != 0:
             raise _export_failure(imported_secret, "Exported secret-key verification")
@@ -332,7 +393,17 @@ def export_keypair(
 
     checksums_path = _write_export_checksums(
         output_dir,
-        [path.name for path in (public_path, secret_path, trust_path, fingerprint_path, readme_path, manifest_path)],
+        [
+            path.name
+            for path in (
+                public_path,
+                secret_path,
+                trust_path,
+                fingerprint_path,
+                readme_path,
+                manifest_path,
+            )
+        ],
     )
     return {
         "fingerprint": fpr,

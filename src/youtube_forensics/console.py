@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _color_enabled() -> bool:
@@ -24,7 +24,7 @@ def paint(text: str, code: str) -> str:
 def log(level: str, message: str) -> None:
     """Write a timestamped toolkit log message to standard output."""
     colors = {"INFO": "36", "PASS": "32", "WARN": "33", "FAIL": "31", "ERROR": "31"}
-    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    now = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     print(f"[{now}] [{paint(level, colors.get(level, '0'))}] {message}", flush=True)
 
 
@@ -39,8 +39,16 @@ def summary(title: str, rows: list[tuple[str, str, str]], passed: bool) -> None:
     print("=" * width)
     label_width = max(28, *(len(label) for label, _, _ in rows)) if rows else 28
     for label, value, state in rows:
-        sym = {"PASS": "✓", "FAIL": "✗", "WARN": "!", "INFO": "•", "SKIP": "-"}.get(state, "•")
-        col = {"PASS": "32", "FAIL": "31", "WARN": "33", "INFO": "36", "SKIP": "33"}.get(state, "0")
+        sym = {"PASS": "✓", "FAIL": "✗", "WARN": "!", "INFO": "•", "SKIP": "-"}.get(
+            state, "•"
+        )
+        col = {
+            "PASS": "32",
+            "FAIL": "31",
+            "WARN": "33",
+            "INFO": "36",
+            "SKIP": "33",
+        }.get(state, "0")
         print(f"  {paint(sym, col)} {label:<{label_width}} {value}")
     print("-" * width)
     print(f"  {paint(symbol, color)} {'Overall result':<{label_width}} {status}")
